@@ -108,7 +108,7 @@ async function fetchProducts() {
           <div class="price">$${p.price}</div>
           <div class="actions-row">
             <button class="btn btn-secondary btn-sm" onclick="addToCart('${p._id}')">Add Cart</button>
-            <button class="btn btn-primary btn-sm" onclick="setupEditProduct('${p._id}', '${p.name}', ${p.price}, '${p.description}')">Edit</button>
+            <button class="btn btn-primary btn-sm" onclick="setupEditProduct('${p._id}', '${p.name}', '${p.category || ''}', ${p.price}, '${p.description}')">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p._id}')">Delete</button>
           </div>
         </div>
@@ -122,8 +122,11 @@ async function fetchProducts() {
 // 2. Products: Create or Update (PUT / POST)
 productForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+  productMsg.textContent = '';
+  
   const id = document.getElementById('edit-product-id').value;
   const name = document.getElementById('p-name').value;
+  const category = document.getElementById('p-category').value.trim();
   const price = Number(document.getElementById('p-price').value);
   const description = document.getElementById('p-desc').value;
   const token = localStorage.getItem('token');
@@ -139,7 +142,7 @@ productForm.addEventListener('submit', async (e) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ name, price, description })
+      body: JSON.stringify({ name, category, price, description })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Operation failed');
@@ -152,9 +155,10 @@ productForm.addEventListener('submit', async (e) => {
   }
 });
 
-function setupEditProduct(id, name, price, desc) {
+function setupEditProduct(id, name, category, price, desc) {
   document.getElementById('edit-product-id').value = id;
   document.getElementById('p-name').value = name;
+  document.getElementById('p-category').value = category;
   document.getElementById('p-price').value = price;
   document.getElementById('p-desc').value = desc;
   
