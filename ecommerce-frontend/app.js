@@ -11,11 +11,13 @@ const authError = document.getElementById('auth-error');
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const email = document.getElementById('email').value;
+  authError.textContent = ''; // تفريغ رسائل الخطأ القديمة
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
 
   try {
-    const res = await fetch(`${BASE_URL}/auth/login`, {
+    // تعديل المسار إلى /users/login
+    const res = await fetch(`${BASE_URL}/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -24,15 +26,20 @@ loginForm.addEventListener('submit', async (e) => {
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.message || 'فشل تسجيل الدخول');
+      throw new Error(data.message || 'فشل تسجيل الدخول، تحقق من البيانات');
     }
 
-    // حفظ التوكين والانتقال لصفحة المنتجات
-    localStorage.setItem('token', data.token);
+    // دعم استلام التوكين باسم token أو accessToken
+    const token = data.token || data.accessToken;
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+
+    // التبديل بين الشاشات
     loginSection.classList.add('hidden');
     productsSection.classList.remove('hidden');
     
-    // جلب المنتجات
+    // جلب عرض المنتجات
     fetchProducts();
 
   } catch (err) {
@@ -44,16 +51,27 @@ loginForm.addEventListener('submit', async (e) => {
 async function fetchProducts() {
   try {
     const res = await fetch(`${BASE_URL}/products`);
+    if (!res.ok) throw new Error('تعذر جلب المنتجات');
+    
     const products = await res.json();
 
-    productsList.innerHTML = products.map(p => `
+    // التعامل مع استجابة المنتجات سواء كانت Array مباشرة أو داخل Object
+    const productsArray = Array.isArray(products) ? products : (products.products || []);
+
+    if (productsArray.length === 0) {
+      productsList.innerHTML = '<p>لا توجد منتجات حالياً.</p>';
+      return;
+    }
+
+    productsList.innerHTML = productsArray.map(p => `
       <div class="product-card">
-        <h3>${p.name}</h3>
-        <p>${p.description}</p>
-        <span>السعر: $${p.price}</span>
+        <h3>${p.name || 'منتج بدون اسم'}</h3>
+        <p>${p.description || 'لا يوجد وصف'}</p>
+        <span>السعر: $${p.price ?? 0}</span>
       </div>
     `).join('');
   } catch (err) {
     console.error('Error loading products:', err);
+    productsList.innerHTML = '<p class="error">حدث خطأ أثناء تحميل المنتجات.</p>';
   }
 }
