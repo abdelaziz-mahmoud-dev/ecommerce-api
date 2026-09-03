@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const cors = require('cors'); // 1. استدعاء cors
 const connectDB = require('./config/db');
 const { initSocket } = require('./config/socket');
 
@@ -12,6 +13,9 @@ const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
 connectDB();
+
+// 2. تفعيل الـ CORS لتسمح للـ Frontend بالاتصال
+app.use(cors()); 
 
 app.use(express.json());
 
