@@ -2,136 +2,100 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 body {
-  background-color: #f4f6f9;
-  color: #333;
+  background-color: #0f172a;
+  color: #f8fafc;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
-/* Auth Section */
+/* Auth Styling */
 .auth-card {
-  background: #ffffff;
+  background: #1e293b;
   padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   width: 100%;
   max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
-.auth-header {
-  text-align: center;
+.tabs {
+  display: flex;
   margin-bottom: 1.5rem;
+  border-bottom: 2px solid #334155;
 }
 
-.auth-header h2 {
-  color: #1e293b;
-  font-size: 1.8rem;
-  margin-bottom: 0.3rem;
+.tab-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.auth-header p {
-  color: #64748b;
-  font-size: 0.9rem;
+.tab-btn.active {
+  color: #38bdf8;
+  border-bottom: 2px solid #38bdf8;
 }
 
-/* Forms & Inputs */
+/* Inputs & Form */
 .input-group {
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
 }
 
 .input-group label {
-  margin-bottom: 0.4rem;
-  font-weight: 500;
-  color: #475569;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  color: #94a3b8;
 }
 
-.input-group input,
-.input-group textarea {
+.input-group input, .input-group textarea {
   padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #fff;
   outline: none;
 }
 
-.input-group input:focus,
-.input-group textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.input-group input:focus, .input-group textarea:focus {
+  border-color: #38bdf8;
 }
 
 /* Buttons */
 .btn {
-  width: 100%;
-  padding: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: opacity 0.2s;
 }
 
-.btn:active {
-  transform: scale(0.98);
-}
+.btn:hover { opacity: 0.9; }
 
-.btn-primary {
-  background-color: #2563eb;
-  color: white;
-}
+.btn-primary { background: #0284c7; color: white; width: 100%; }
+.btn-success { background: #16a34a; color: white; }
+.btn-secondary { background: #334155; color: white; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-outline { background: transparent; border: 1px solid #64748b; color: #94a3b8; width: 100%; margin-top: 0.5rem; }
+.btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
 
-.btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-.btn-success {
-  background-color: #10b981;
-  color: white;
-}
-
-.btn-success:hover {
-  background-color: #059669;
-}
-
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid #ef4444;
-  color: #ef4444;
-  width: auto;
-  padding: 0.5rem 1rem;
-}
-
-.btn-outline:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
-.error-msg {
-  color: #ef4444;
-  font-size: 0.85rem;
-  margin-top: 0.8rem;
-  text-align: center;
-}
-
-/* Dashboard Layout */
+/* Dashboard */
 .dashboard-container {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
   padding: 2rem;
   align-self: flex-start;
 }
@@ -140,77 +104,77 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #1e293b;
   padding: 1rem 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  border-radius: 10px;
   margin-bottom: 2rem;
 }
 
-.content-grid {
+.content-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 2rem;
 }
 
-@media (max-width: 768px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .card {
-  background: white;
+  background: #1e293b;
   padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-radius: 10px;
 }
 
-.products-container h3,
-.form-card h3 {
-  margin-bottom: 1.2rem;
-  color: #1e293b;
-}
-
-/* Products Cards */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.2rem;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .product-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 1.2rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 1rem;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-  transition: transform 0.2s;
 }
 
-.product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+.product-card h4 { color: #f8fafc; margin-bottom: 0.4rem; }
+.product-card p { color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.8rem; }
+.product-card .price { font-size: 1.1rem; font-weight: bold; color: #4ade80; margin-bottom: 0.8rem; }
+
+.actions-row { display: flex; gap: 0.5rem; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.product-card h4 {
-  color: #0f172a;
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  position: relative;
 }
 
-.product-card p {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-  line-height: 1.4;
+.close-btn {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
 }
 
-.product-card .price {
-  font-weight: 800;
-  color: #059669;
-  font-size: 1.1rem;
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #334155;
 }
+
+.error-msg { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; text-align: center; }
+.msg { font-size: 0.85rem; margin-top: 0.5rem; text-align: center; color: #38bdf8; }

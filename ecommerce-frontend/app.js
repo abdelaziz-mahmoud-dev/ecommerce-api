@@ -1,30 +1,65 @@
 const BASE_URL = 'https://ecommerce-api-ten-phi.vercel.app/api';
 
-// عناصر الـ DOM
-const loginSection = document.getElementById('login-section');
-const productsSection = document.getElementById('products-section');
+// DOM Elements
+const authSection = document.getElementById('auth-section');
+const appSection = document.getElementById('app-section');
 const loginForm = document.getElementById('login-form');
-const addProductForm = document.getElementById('add-product-form');
+const registerForm = document.getElementById('register-form');
+const productForm = document.getElementById('product-form');
 const productsList = document.getElementById('products-list');
 const authError = document.getElementById('auth-error');
-const productError = document.getElementById('product-error');
-const logoutBtn = document.getElementById('logout-btn');
+const productMsg = document.getElementById('product-msg');
 
-// التثبيت الأولي عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    showProductsView();
+  if (localStorage.getItem('token')) {
+    showDashboard();
   }
 });
 
-// 1. تسجيل الدخول
+// Switch Tabs Login/Register
+function switchAuthTab(tab) {
+  authError.textContent = '';
+  if (tab === 'login') {
+    document.getElementById('tab-login-btn').classList.add('active');
+    document.getElementById('tab-register-btn').classList.remove('active');
+    loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+  } else {
+    document.getElementById('tab-register-btn').classList.add('active');
+    document.getElementById('tab-login-btn').classList.remove('active');
+    registerForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+  }
+}
+
+// 1. Auth: Register
+registerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+
+  try {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+    localStorage.setItem('token', data.token || data.accessToken);
+    showDashboard();
+  } catch (err) {
+    authError.textContent = err.message;
+  }
+});
+
+// 1. Auth: Login
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  authError.textContent = '';
-
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
 
   try {
     const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -32,51 +67,51 @@ loginForm.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-
     const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Invalid credentials');
 
-    if (!res.ok) {
-      throw new Error(data.message || 'بيانات الدخول غير صحيحة');
-    }
-
-    const token = data.token || data.accessToken;
-    localStorage.setItem('token', token);
-    
-    showProductsView();
+    localStorage.setItem('token', data.token || data.accessToken);
+    showDashboard();
   } catch (err) {
     authError.textContent = err.message;
   }
 });
 
-// 2. إظهار شاشة المنتجات
-function showProductsView() {
-  loginSection.classList.add('hidden');
-  productsSection.classList.remove('hidden');
+function showDashboard() {
+  authSection.classList.add('hidden');
+  appSection.classList.remove('hidden');
   document.body.style.alignItems = 'flex-start';
   fetchProducts();
 }
 
-// 3. جلب قائمة المنتجات
+function logout() {
+  localStorage.removeItem('token');
+  appSection.classList.add('hidden');
+  authSection.classList.remove('hidden');
+  document.body.style.alignItems = 'center';
+}
+
+// 2. Products: Fetch All
 async function fetchProducts() {
   try {
     const res = await fetch(`${BASE_URL}/products`);
-    if (!res.ok) throw new Error('فشل في جلب المنتجات');
-
-    const products = await res.json();
-    const list = Array.isArray(products) ? products : (products.products || []);
-
-    if (list.length === 0) {
-      productsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #64748b;">لا توجد منتجات حتى الآن.</p>';
-      return;
-    }
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.products || []);
 
     productsList.innerHTML = list.map(p => `
       <div class="product-card">
         <div>
-          <h4>${p.name || 'منتج بدون اسم'}</h4>
-          <p>${p.description || 'لا يوجد وصف للمنتج'}</p>
+          <h4>${p.name}</h4>
+          <p>${p.description}</p>
         </div>
-        <div class="price">$${p.price ?? 0}</div>
+        <div>
+          <div class="price">$${p.price}</div>
+          <div class="actions-row">
+            <button class="btn btn-secondary btn-sm" onclick="addToCart('${p._id}')">Add Cart</button>
+            <button class="btn btn-primary btn-sm" onclick="setupEditProduct('${p._id}', '${p.name}', ${p.price}, '${p.description}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p._id}')">Delete</button>
+          </div>
+        </div>
       </div>
     `).join('');
   } catch (err) {
@@ -84,43 +119,164 @@ async function fetchProducts() {
   }
 }
 
-// 4. إضافة منتج جديد
-addProductForm.addEventListener('submit', async (e) => {
+// 2. Products: Create or Update (PUT / POST)
+productForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  productError.textContent = '';
-
-  const name = document.getElementById('product-name').value.trim();
-  const price = Number(document.getElementById('product-price').value);
-  const description = document.getElementById('product-desc').value.trim();
+  const id = document.getElementById('edit-product-id').value;
+  const name = document.getElementById('p-name').value;
+  const price = Number(document.getElementById('p-price').value);
+  const description = document.getElementById('p-desc').value;
   const token = localStorage.getItem('token');
 
+  const isEdit = Boolean(id);
+  const url = isEdit ? `${BASE_URL}/products/${id}` : `${BASE_URL}/products`;
+  const method = isEdit ? 'PUT' : 'POST';
+
   try {
-    const res = await fetch(`${BASE_URL}/products`, {
-      method: 'POST',
+    const res = await fetch(url, {
+      method,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ name, price, description })
     });
-
     const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Operation failed');
 
-    if (!res.ok) {
-      throw new Error(data.message || 'تعذر إضافة المنتج');
-    }
-
-    addProductForm.reset();
+    productMsg.textContent = isEdit ? 'Updated successfully!' : 'Added successfully!';
+    resetProductForm();
     fetchProducts();
   } catch (err) {
-    productError.textContent = err.message;
+    productMsg.textContent = err.message;
   }
 });
 
-// 5. تسجيل الخروج
-logoutBtn.addEventListener('click', () => {
-  localStorage.removeItem('token');
-  productsSection.classList.add('hidden');
-  loginSection.classList.remove('hidden');
-  document.body.style.alignItems = 'center';
-});
+function setupEditProduct(id, name, price, desc) {
+  document.getElementById('edit-product-id').value = id;
+  document.getElementById('p-name').value = name;
+  document.getElementById('p-price').value = price;
+  document.getElementById('p-desc').value = desc;
+  
+  document.getElementById('form-title').textContent = 'Edit Product';
+  document.getElementById('product-submit-btn').textContent = 'Update Product';
+  document.getElementById('cancel-edit-btn').classList.remove('hidden');
+}
+
+function resetProductForm() {
+  productForm.reset();
+  document.getElementById('edit-product-id').value = '';
+  document.getElementById('form-title').textContent = 'Add New Product';
+  document.getElementById('product-submit-btn').textContent = 'Create Product';
+  document.getElementById('cancel-edit-btn').classList.add('hidden');
+}
+
+// 2. Products: Delete (DELETE)
+async function deleteProduct(id) {
+  if (!confirm('Are you sure you want to delete this product?')) return;
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch(`${BASE_URL}/products/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    fetchProducts();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 3. Cart API Endpoints Integrations
+async function addToCart(productId) {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${BASE_URL}/cart`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ productId, quantity: 1 })
+    });
+    if (!res.ok) throw new Error('Could not add to cart');
+    alert('Product added to cart!');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function fetchCart() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${BASE_URL}/cart`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    renderCart(data);
+    toggleCartModal(true);
+  } catch (err) {
+    alert('Failed to fetch cart');
+  }
+}
+
+function renderCart(cartData) {
+  const cartItems = document.getElementById('cart-items');
+  const items = cartData.items || [];
+  
+  if (items.length === 0) {
+    cartItems.innerHTML = '<p>Your cart is empty.</p>';
+    document.getElementById('cart-total').textContent = '0.00';
+    return;
+  }
+
+  cartItems.innerHTML = items.map(item => `
+    <div class="cart-item">
+      <div>
+        <strong>${item.product?.name || 'Product'}</strong>
+        <div>$${item.product?.price} x ${item.quantity}</div>
+      </div>
+      <div>
+        <button class="btn btn-danger btn-sm" onclick="removeFromCart('${item.product?._id}')">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('cart-total').textContent = cartData.totalPrice || '0.00';
+}
+
+async function removeFromCart(productId) {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${BASE_URL}/cart/${productId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to remove item');
+    fetchCart();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function toggleCartModal(show) {
+  const modal = document.getElementById('cart-modal');
+  show ? modal.classList.remove('hidden') : modal.classList.add('hidden');
+}
+
+// 4. Orders API Integration
+async function createOrder() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${BASE_URL}/orders`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Order creation failed');
+    alert('Order created successfully!');
+    toggleCartModal(false);
+  } catch (err) {
+    alert(err.message);
+  }
+}
