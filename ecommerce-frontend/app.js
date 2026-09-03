@@ -16,12 +16,18 @@ loginForm.addEventListener('submit', async (e) => {
   const password = document.getElementById('password').value;
 
   try {
-    // تعديل المسار إلى /users/login
-    const res = await fetch(`${BASE_URL}/users/login`, {
+    // تعديل المسار إلى /auth/login
+    const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
+
+    // التعامل مع الاستجابات غير المتوقعة (مثل إرجاع HTML بدلاً من JSON)
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('المسار غير صحيح أو السيرفر لم يرجع JSON');
+    }
 
     const data = await res.json();
 
