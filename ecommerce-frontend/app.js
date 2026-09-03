@@ -1,83 +1,126 @@
 const BASE_URL = 'https://ecommerce-api-ten-phi.vercel.app/api';
 
 // عناصر الـ DOM
-const loginForm = document.getElementById('login-form');
 const loginSection = document.getElementById('login-section');
 const productsSection = document.getElementById('products-section');
+const loginForm = document.getElementById('login-form');
+const addProductForm = document.getElementById('add-product-form');
 const productsList = document.getElementById('products-list');
 const authError = document.getElementById('auth-error');
+const productError = document.getElementById('product-error');
+const logoutBtn = document.getElementById('logout-btn');
 
-// 1. التعامل مع تسجيل الدخول
+// التثبيت الأولي عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    showProductsView();
+  }
+});
+
+// 1. تسجيل الدخول
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
-  authError.textContent = ''; // تفريغ رسائل الخطأ القديمة
+  authError.textContent = '';
+
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
 
   try {
-    // تعديل المسار إلى /auth/login
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
 
-    // التعامل مع الاستجابات غير المتوقعة (مثل إرجاع HTML بدلاً من JSON)
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('المسار غير صحيح أو السيرفر لم يرجع JSON');
-    }
-
     const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.message || 'فشل تسجيل الدخول، تحقق من البيانات');
+      throw new Error(data.message || 'بيانات الدخول غير صحيحة');
     }
 
-    // دعم استلام التوكين باسم token أو accessToken
     const token = data.token || data.accessToken;
-    if (token) {
-      localStorage.setItem('token', token);
-    }
-
-    // التبديل بين الشاشات
-    loginSection.classList.add('hidden');
-    productsSection.classList.remove('hidden');
+    localStorage.setItem('token', token);
     
-    // جلب عرض المنتجات
-    fetchProducts();
-
+    showProductsView();
   } catch (err) {
     authError.textContent = err.message;
   }
 });
 
-// 2. جلب المنتجات من الـ API
+// 2. إظهار شاشة المنتجات
+function showProductsView() {
+  loginSection.classList.add('hidden');
+  productsSection.classList.remove('hidden');
+  document.body.style.alignItems = 'flex-start';
+  fetchProducts();
+}
+
+// 3. جلب قائمة المنتجات
 async function fetchProducts() {
   try {
     const res = await fetch(`${BASE_URL}/products`);
-    if (!res.ok) throw new Error('تعذر جلب المنتجات');
-    
+    if (!res.ok) throw new Error('فشل في جلب المنتجات');
+
     const products = await res.json();
+    const list = Array.isArray(products) ? products : (products.products || []);
 
-    // التعامل مع استجابة المنتجات سواء كانت Array مباشرة أو داخل Object
-    const productsArray = Array.isArray(products) ? products : (products.products || []);
-
-    if (productsArray.length === 0) {
-      productsList.innerHTML = '<p>لا توجد منتجات حالياً.</p>';
+    if (list.length === 0) {
+      productsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #64748b;">لا توجد منتجات حتى الآن.</p>';
       return;
     }
 
-    productsList.innerHTML = productsArray.map(p => `
+    productsList.innerHTML = list.map(p => `
       <div class="product-card">
-        <h3>${p.name || 'منتج بدون اسم'}</h3>
-        <p>${p.description || 'لا يوجد وصف'}</p>
-        <span>السعر: $${p.price ?? 0}</span>
+        <div>
+          <h4>${p.name || 'منتج بدون اسم'}</h4>
+          <p>${p.description || 'لا يوجد وصف للمنتج'}</p>
+        </div>
+        <div class="price">$${p.price ?? 0}</div>
       </div>
     `).join('');
   } catch (err) {
-    console.error('Error loading products:', err);
-    productsList.innerHTML = '<p class="error">حدث خطأ أثناء تحميل المنتجات.</p>';
+    productsList.innerHTML = `<p class="error-msg">${err.message}</p>`;
   }
 }
+
+// 4. إضافة منتج جديد
+addProductForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  productError.textContent = '';
+
+  const name = document.getElementById('product-name').value.trim();
+  const price = Number(document.getElementById('product-price').value);
+  const description = document.getElementById('product-desc').value.trim();
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch(`${BASE_URL}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, price, description })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || 'تعذر إضافة المنتج');
+    }
+
+    addProductForm.reset();
+    fetchProducts();
+  } catch (err) {
+    productError.textContent = err.message;
+  }
+});
+
+// 5. تسجيل الخروج
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('token');
+  productsSection.classList.add('hidden');
+  loginSection.classList.remove('hidden');
+  document.body.style.alignItems = 'center';
+});
