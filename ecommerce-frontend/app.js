@@ -9,6 +9,7 @@ const productForm = document.getElementById('product-form');
 const productsList = document.getElementById('products-list');
 const authError = document.getElementById('auth-error');
 const productMsg = document.getElementById('product-msg');
+const cartCountEl = document.getElementById('cart-count');
 
 document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('token')) {
@@ -82,6 +83,7 @@ function showDashboard() {
   appSection.classList.remove('hidden');
   document.body.style.alignItems = 'flex-start';
   fetchProducts();
+  updateCartCount();
 }
 
 function logout() {
@@ -206,6 +208,7 @@ async function addToCart(productId) {
     });
     if (!res.ok) throw new Error('Could not add to cart');
     alert('Product added to cart!');
+    updateCartCount();
   } catch (err) {
     alert(err.message);
   }
@@ -225,6 +228,24 @@ async function fetchCart() {
   }
 }
 
+// دالة جديدة: بتحدث رقم السلة اللي فوق (Cart Count) من غير ما تفتح المودال
+async function updateCartCount() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}/cart`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const items = data.items || [];
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    cartCountEl.textContent = totalQuantity;
+  } catch (err) {
+    console.error('Failed to update cart count', err);
+  }
+}
+
 function renderCart(cartData) {
   const cartItems = document.getElementById('cart-items');
   const items = cartData.items || [];
@@ -239,7 +260,7 @@ function renderCart(cartData) {
     <div class="cart-item">
       <div>
         <strong>${item.product?.name || 'Product'}</strong>
-        <div>$${item.product?.price} x ${item.quantity}</div>
+        <div>$${item.price} x ${item.quantity}</div>
       </div>
       <div>
         <button class="btn btn-danger btn-sm" onclick="removeFromCart('${item.product?._id}')">Remove</button>
@@ -259,6 +280,7 @@ async function removeFromCart(productId) {
     });
     if (!res.ok) throw new Error('Failed to remove item');
     fetchCart();
+    updateCartCount();
   } catch (err) {
     alert(err.message);
   }
@@ -275,11 +297,24 @@ async function createOrder() {
   try {
     const res = await fetch(`${BASE_URL}/orders`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        shippingAddress: {
+          address: 'N/A',
+          city: 'N/A',
+          postalCode: '00000',
+          country: 'N/A'
+        },
+        paymentMethod: 'Cash on Delivery'
+      })
     });
     if (!res.ok) throw new Error('Order creation failed');
     alert('Order created successfully!');
     toggleCartModal(false);
+    updateCartCount();
   } catch (err) {
     alert(err.message);
   }
